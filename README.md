@@ -2,6 +2,9 @@
 
 심플하고 트렌디한 데일리 주얼리 쇼핑몰입니다.
 
+- 배포 사이트: https://konari-2026-0807.github.io/nuve-jewelry-shop/
+- 저장소: https://github.com/konari-2026-0807/nuve-jewelry-shop
+
 ## 주요 기능
 
 - 카테고리별 주얼리 상품 탐색
@@ -22,3 +25,13 @@
 ## Supabase Edge Function 설정
 
 결제 승인 함수 배포 전 Supabase 프로젝트에 `TOSS_SECRET_KEY`를 비밀 환경변수로 등록해야 합니다. 시크릿 키는 브라우저 코드나 Git 저장소에 추가하지 마세요.
+
+## 로컬 실행
+
+```bash
+node dev-server.mjs
+```
+
+`http://127.0.0.1:4173/`에서 쇼핑몰을 확인할 수 있습니다.
+
+다른 컴퓨터나 모바일에서 이어서 작업하는 방법은 [DEVICE_SETUP.md](DEVICE_SETUP.md)를 참고하세요. 새 Codex 채팅은 [AGENTS.md](AGENTS.md)의 프로젝트 규칙을 자동으로 활용할 수 있습니다.
