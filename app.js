@@ -33,6 +33,8 @@ const products = Object.keys(names).flatMap((category, categoryIndex) => names[c
   const price = basePrices[category][index];
   return {
     id, name, category, image: index, price,
+    active: true,
+    stock: 20,
     originalPrice: isSale ? Math.round(price / .8 / 1000) * 1000 : null,
     badge: index === 0 || index === 6 ? 'NEW' : (index === 1 ? 'BEST' : ''),
     review: 18 + ((categoryIndex + 2) * (index + 7) * 11) % 186,
@@ -79,7 +81,7 @@ function filteredProducts() {
   let result = products.filter(product => {
     const categoryMatch = currentFilter === 'all' || product.category === currentFilter || (currentFilter === 'best' && (product.badge === 'BEST' || product.review > 120)) || (currentFilter === 'new' && product.badge === 'NEW');
     const searchMatch = !currentSearch || `${product.name} ${product.label} ${product.material}`.toLowerCase().includes(currentSearch.toLowerCase());
-    return categoryMatch && searchMatch;
+    return product.active !== false && categoryMatch && searchMatch;
   });
   if (currentSort === 'low') result.sort((a,b) => a.price - b.price);
   if (currentSort === 'high') result.sort((a,b) => b.price - a.price);
@@ -97,8 +99,26 @@ function renderProducts() {
 }
 
 function renderBest() {
-  const best = [...products].sort((a,b) => b.review - a.review).slice(0,8);
+  const best = products.filter(product => product.active !== false).sort((a,b) => b.review - a.review).slice(0,8);
   bestGrid.innerHTML = best.map(cardTemplate).join('');
+}
+
+async function loadStoreCatalog() {
+  const { data, error } = await supabase.from('store_products').select('slug,name,price,active,stock');
+  if (error) {
+    console.error(error);
+    return;
+  }
+  (data || []).forEach(row => {
+    const product = products.find(item => item.id === row.slug);
+    if (!product) return;
+    product.name = row.name;
+    product.price = Number(row.price);
+    product.active = row.active;
+    product.stock = Number(row.stock ?? 0);
+  });
+  cart = cart.filter(item => products.some(product => product.id === item.id && product.active !== false));
+  wishes = new Set([...wishes].filter(id => products.some(product => product.id === id && product.active !== false)));
 }
 
 function showToast(message) {
@@ -125,7 +145,7 @@ function closeDrawers() {
 function readGuestCart() {
   try {
     const stored = JSON.parse(localStorage.getItem(GUEST_CART_KEY) || '[]');
-    return Array.isArray(stored) ? stored.filter(item => products.some(product => product.id === item.id) && Number.isInteger(item.quantity) && item.quantity > 0) : [];
+    return Array.isArray(stored) ? stored.filter(item => products.some(product => product.id === item.id && product.active !== false) && Number.isInteger(item.quantity) && item.quantity > 0) : [];
   } catch {
     return [];
   }
@@ -171,7 +191,7 @@ async function loadAccountCart() {
   if (!currentUser) { cart = readGuestCart(); renderCart(); return; }
   const { data, error } = await supabase.from('cart_items').select('product_id,quantity').order('created_at');
   if (error) { console.error(error); showToast('장바구니를 불러오지 못했습니다.'); return; }
-  cart = (data || []).filter(item => products.some(product => product.id === item.product_id)).map(item => ({ id: item.product_id, quantity: item.quantity }));
+  cart = (data || []).filter(item => products.some(product => product.id === item.product_id && product.active !== false)).map(item => ({ id: item.product_id, quantity: item.quantity }));
   renderCart();
 }
 
@@ -792,6 +812,7 @@ document.querySelector('#logout-button').addEventListener('click', async () => {
 
 document.querySelectorAll('.member-menu button').forEach(button => button.addEventListener('click', () => showToast('마이페이지 상세 기능은 준비 중입니다.')));
 
+await loadStoreCatalog();
 renderBest();
 renderProducts();
 renderCart();
