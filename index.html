@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=Gowun+Batang:wght@400;700&family=Noto+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=20260813-admin-entry" />
     <script src="https://js.tosspayments.com/v2/standard"></script>
   </head>
   <body>
@@ -30,6 +30,7 @@
         <a class="wordmark" href="#top" aria-label="NUVE 홈">NUVE<span>JEWELRY</span></a>
 
         <div class="header-actions">
+          <a class="icon-action admin-entry" data-admin-entry href="admin.html" aria-label="관리자 페이지로 이동">ADMIN</a>
           <button type="button" class="icon-action" data-search-open aria-label="검색 열기">
             <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
             <span>SEARCH</span>
@@ -184,7 +185,7 @@
     <aside class="mobile-nav" aria-hidden="true">
       <div class="drawer-head"><a class="wordmark" href="#top">NUVE</a><button type="button" data-drawer-close aria-label="메뉴 닫기">×</button></div>
       <nav><button data-category="best">BEST</button><button data-category="new">NEW</button><button data-category="earrings">EARRING</button><button data-category="necklaces">NECKLACE</button><button data-category="bracelets">BRACELET</button><button data-category="rings">RING</button><button data-category="all">ALL</button></nav>
-      <div><button type="button" data-auth-open class="mobile-account-link">LOGIN / JOIN</button><a href="#story">BRAND</a><a href="#journal">JOURNAL</a><a href="#footer">NOTICE</a></div>
+      <div><button type="button" data-auth-open class="mobile-account-link">LOGIN / JOIN</button><a data-admin-entry href="admin.html">ADMIN</a><a href="#story">BRAND</a><a href="#journal">JOURNAL</a><a href="#footer">NOTICE</a></div>
     </aside>
 
     <dialog class="product-modal" id="product-modal">
@@ -342,6 +343,6 @@
     </dialog>
 
     <div class="toast" role="status" aria-live="polite"></div>
-    <script type="module" src="app.js"></script>
+    <script type="module" src="app.js?v=20260813-admin-entry"></script>
   </body>
 </html>

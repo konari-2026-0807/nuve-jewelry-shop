@@ -688,6 +688,13 @@ function authErrorMessage(error) {
 
 async function renderAuthState() {
   const loggedIn = Boolean(currentUser);
+  let adminLoggedIn = false;
+  if (loggedIn) {
+    const { data, error: adminError } = await supabase.from('admin_users').select('user_id').eq('user_id', currentUser.id).maybeSingle();
+    if (adminError) console.error(adminError);
+    adminLoggedIn = Boolean(data);
+  }
+  document.querySelectorAll('[data-admin-entry]').forEach(link => { link.hidden = adminLoggedIn; });
   authGuest.hidden = loggedIn;
   memberPanel.hidden = !loggedIn;
   document.querySelectorAll('.account-label').forEach(label => {
