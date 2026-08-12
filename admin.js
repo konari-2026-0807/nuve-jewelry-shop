@@ -30,7 +30,10 @@ function escapeHtml(value = '') {
 function showOnly(id) {
   ['admin-login', 'access-denied', 'admin-shell'].forEach(name => {
     const element = $(`#${name}`);
-    element.hidden = name !== id;
+    const shouldShow = name === id;
+    element.hidden = !shouldShow;
+    if (shouldShow) element.style.removeProperty('display');
+    else element.style.setProperty('display', 'none', 'important');
   });
 }
 
