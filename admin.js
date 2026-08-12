@@ -21,6 +21,7 @@ let products = [];
 let customers = [];
 let chartMetric = 'orders';
 let toastTimer;
+let bootstrapAvailable = false;
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
@@ -31,6 +32,34 @@ function showOnly(id) {
     const element = $(`#${name}`);
     element.hidden = name !== id;
   });
+}
+
+function setLoginMode(setupMode) {
+  bootstrapAvailable = setupMode;
+  $('#admin-login-form').hidden = setupMode;
+  $('#google-admin-login').hidden = setupMode;
+  $('#admin-setup-form').hidden = !setupMode;
+  $('#login-eyebrow').textContent = setupMode ? 'INITIAL SETUP' : 'ADMIN ACCESS';
+  $('#login-title').textContent = setupMode ? '새 관리자 등록' : '관리자 로그인';
+  $('#login-description').textContent = setupMode
+    ? '새롭게 사용할 관리자 계정을 등록해 주세요.'
+    : 'NUVE 관리자 계정으로 로그인해 주세요.';
+}
+
+async function checkBootstrapAvailability() {
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-bootstrap`, {
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY },
+    });
+    if (!response.ok) throw new Error(`bootstrap status ${response.status}`);
+    const data = await response.json();
+    setLoginMode(data.available === true);
+    return bootstrapAvailable;
+  } catch (error) {
+    console.error(error);
+    setLoginMode(false);
+    return false;
+  }
 }
 
 function toast(message) {
@@ -50,12 +79,17 @@ async function isAdmin(userId) {
 async function startAdmin(session) {
   if (!session?.user) {
     currentUser = null;
+    await checkBootstrapAvailability();
     showOnly('admin-login');
     return;
   }
   currentUser = session.user;
   try {
     if (!(await isAdmin(currentUser.id))) {
+      if (await checkBootstrapAvailability()) {
+        showOnly('admin-login');
+        return;
+      }
       showOnly('access-denied');
       return;
     }
@@ -385,6 +419,50 @@ $('#admin-login-form').addEventListener('submit', async event => {
   if (error) $('#login-error').textContent = '이메일 또는 비밀번호를 확인해 주세요.';
 });
 
+$('#admin-setup-form').addEventListener('submit', async event => {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submit = $('button[type="submit"]', form);
+  const email = form.elements.email.value.trim();
+  const password = form.elements.password.value;
+  const errorBox = $('#setup-error');
+  errorBox.textContent = '';
+  if (password !== form.elements.passwordConfirm.value) {
+    errorBox.textContent = '비밀번호가 서로 일치하지 않습니다.';
+    return;
+  }
+  submit.disabled = true;
+  try {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin-bootstrap`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_PUBLISHABLE_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const messages = {
+        admin_already_configured: '다른 관리자가 먼저 등록되었습니다. 로그인해 주세요.',
+        invalid_email: '올바른 이메일 주소를 입력해 주세요.',
+        invalid_password: '비밀번호는 8자 이상 72자 이하로 입력해 주세요.',
+        account_create_failed: '관리자 계정을 만들지 못했습니다.',
+        account_update_failed: '기존 계정을 관리자 계정으로 전환하지 못했습니다.',
+      };
+      throw new Error(messages[result.error] || '관리자 등록을 완료하지 못했습니다.');
+    }
+    setLoginMode(false);
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error('등록은 완료됐지만 자동 로그인하지 못했습니다. 새 계정으로 로그인해 주세요.');
+    form.reset();
+    await startAdmin(data.session);
+    toast('새 관리자 계정이 등록되었습니다.');
+  } catch (error) {
+    errorBox.textContent = error.message;
+    await checkBootstrapAvailability();
+  } finally {
+    submit.disabled = false;
+  }
+});
+
 $('#google-admin-login').addEventListener('click', async () => {
   const redirectTo = new URL('admin.html', window.location.href).href;
   const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo, scopes: 'openid email profile', queryParams: { prompt: 'select_account' } } });
@@ -478,5 +556,6 @@ supabase.auth.onAuthStateChange((event, session) => {
 });
 
 const { data: { session } } = await supabase.auth.getSession();
+await checkBootstrapAvailability();
 await startAdmin(session);
 changeView(location.hash.slice(1) || 'dashboard');
