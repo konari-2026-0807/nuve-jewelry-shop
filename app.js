@@ -707,9 +707,8 @@ document.querySelectorAll('[data-auth-tab]').forEach(button => button.addEventLi
 document.querySelectorAll('[data-google-login]').forEach(button => button.addEventListener('click', async () => {
   document.querySelectorAll('[data-google-login]').forEach(item => item.disabled = true);
   sessionStorage.setItem('nuve_oauth_pending', 'google');
-  // Supabase의 `/**`는 대시보드 허용 목록에서만 쓰는 패턴이다.
-  // 실제 브라우저 경로로 전달하지 않고 쇼핑몰 루트로 돌아오게 한다.
-  const redirectTo = new URL('/', window.location.origin).href;
+  // GitHub Pages처럼 하위 경로에 배포해도 현재 쇼핑몰 주소로 돌아오게 한다.
+  const redirectTo = new URL(window.location.pathname, window.location.origin).href;
   const { error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {
